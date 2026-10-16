@@ -6,18 +6,12 @@ const path = require("path");
 const UPLOADS_DIR = path.join(__dirname, "..", "..", "uploads");
 
 // GET /api/files/:filename - lê e devolve o conteúdo de um arquivo da pasta uploads/
+''
 router.get("/:filename", (req, res) => {
-  const filePath = path.resolve(UPLOADS_DIR, req.params.filename);
-  const relativePath = path.relative(UPLOADS_DIR, filePath);
 
-  if (
-    !relativePath ||
-    relativePath === ".." ||
-    relativePath.startsWith(`..${path.sep}`) ||
-    path.isAbsolute(relativePath)
-  ) {
-    return res.status(400).json({ error: "Nome de arquivo inválido" });
-  }
+  // Remove caracteres e caminhos relativos (ex: ../) para evitar Path Traversal
+  const safeFilename = path.basename(req.params.filename);
+  const filePath = path.join(UPLOADS_DIR, safeFilename);
 
   fs.readFile(filePath, "utf8", (err, data) => {
     if (err) return res.status(404).json({ error: "Arquivo não encontrado" });
