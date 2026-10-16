@@ -13,7 +13,7 @@ jobs:
           node-version: '24.x'
           
       - name: Install dependencies
-        working-directory: ./app/app-student
+        working-directory: app-student
         run: npm install
 
       - name: Scan de Segurança com Semgrep
