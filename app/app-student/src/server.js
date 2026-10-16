@@ -41,8 +41,3 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
-
-function testeInseguroSemgrep(entrada) {
-    // O uso do eval() é detectado como vulnerabilidade crítica pelo Semgrep
-    return eval(entrada); 
-}
