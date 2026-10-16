@@ -27,3 +27,5 @@ SCA: Análise de Composição de Software: serve para analisar se e quais depend
 DAST: Teste Dinâmico de Segurança de Aplicativo: objetivo é verificar rotinas da aplicação analisando tempo de resposta, de compilação, etc., ou seja, faz uma análise geral do funcionamento do aplicativo, ao contrário do Sast ele é feito no aplicativo em execução, ou seja, é como se fosse um invasor na aplicação e vai te mostrar quais as vulnerabilidades do aplicativo.
 
 
+
+
