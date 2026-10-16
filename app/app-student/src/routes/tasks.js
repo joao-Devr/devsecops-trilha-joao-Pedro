@@ -13,7 +13,13 @@ router.get("/filter", (req, res) => {
   if (!expr) return res.status(400).json({ error: "Parâmetro 'expr' é obrigatório" });
   try {
     const tasks = db.listTasks();
-    const result = tasks.filter((t) => eval(expr));
+    const cleanExpr = String(expr).toLowerCase();
+    
+    // Filtro seguro por busca de texto (substituindo o eval)
+    const result = tasks.filter((t) => 
+      (t.title && t.title.toLowerCase().includes(cleanExpr)) ||
+      (t.owner && t.owner.toLowerCase().includes(cleanExpr))
+    );
     res.json(result);
   } catch (err) {
     res.status(400).json({ error: "Expressão inválida", details: err.message });

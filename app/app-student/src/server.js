@@ -1,4 +1,5 @@
 const express = require("express");
+const csrf = require("csurf");
 const _ = require("lodash");
 
 const tasksRouter = require("./routes/tasks");
@@ -9,6 +10,9 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
+
+// Proteção contra CSRF reconhecida pelo Semgrep
+app.use(csrf({ cookie: true }));
 
 // Healthcheck - usado pelo Render para saber se a aplicação está no ar.
 app.get("/health", (req, res) => {
@@ -41,8 +45,3 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
-
-function testeInseguroSemgrep(entrada) {
-    // O uso do eval() é detectado como vulnerabilidade crítica pelo Semgrep
-    return eval(entrada); 
-}
