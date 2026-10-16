@@ -1,0 +1,31 @@
+name: Continuous Integration
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: carregar o código do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+
+      - name: Instalar dependências
+        working-directory: app/app-student
+        run: npm install
+
+      - name: Configurar Python para o Semgrep
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Instalar Semgrep
+        run: pip install semgrep
+
+      - name: Executar Semgrep na pasta app/app-student
+        # A flag --error obriga a pipeline a falhar (ficar vermelha) se encontrar um problema
+        run: semgrep scan --error --config auto app/app-student/
