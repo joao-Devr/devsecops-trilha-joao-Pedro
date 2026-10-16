@@ -37,5 +37,4 @@ function deleteTask(id) {
   tasks = tasks.filter((t) => t.id !== Number(id));
   return tasks.length < before;
 }
-
 module.exports = { listTasks, getTask, createTask, updateTask, deleteTask };
