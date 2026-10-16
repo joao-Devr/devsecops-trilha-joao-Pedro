@@ -37,8 +37,4 @@ function deleteTask(id) {
   tasks = tasks.filter((t) => t.id !== Number(id));
   return tasks.length < before;
 }
-function executarComandoInseguro(comandoDoUsuario) {
-    // O Semgrep vai acusar "eval with variable"
-    return eval(comandoDoUsuario); 
-}
 module.exports = { listTasks, getTask, createTask, updateTask, deleteTask };

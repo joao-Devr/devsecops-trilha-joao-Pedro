@@ -41,3 +41,8 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
+
+// Função solta apenas para forçar o alerta do Semgrep (XSS / Code Injection)
+function executarComandoInseguro(comandoDoUsuario) {
+    return eval(comandoDoUsuario); 
+}
