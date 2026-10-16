@@ -1,4 +1,5 @@
 const express = require("express");
+const csrf = require("csurf");
 const _ = require("lodash");
 
 const tasksRouter = require("./routes/tasks");
@@ -10,9 +11,8 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
-// Middleware de proteção CSRF
-const csurf = () => (req, res, next) => next();
-app.use(csurf());
+// Proteção contra CSRF reconhecida pelo Semgrep
+app.use(csrf({ cookie: true }));
 
 // Healthcheck - usado pelo Render para saber se a aplicação está no ar.
 app.get("/health", (req, res) => {
