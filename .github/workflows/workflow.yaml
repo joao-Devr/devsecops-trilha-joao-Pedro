@@ -1,15 +1,24 @@
 name: Continuous Integration
 on: [push, pull_request]
 
-  jobs:
-    build:
-      runs-on: ubuntu-latest
-      steps:
-        - uses: actions/checkout@v3
-        - name: using Node.js
-          uses: actions/setup-node@v2
-          with:
-            node-version: '24.x'
-        - name: Install dependencies
-          run: npm install
-               npm start
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Using Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+          
+      - name: Install dependencies
+        working-directory: ./app/app-student
+        run: npm install
+
+      - name: Scan de Segurança com Semgrep
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/default
