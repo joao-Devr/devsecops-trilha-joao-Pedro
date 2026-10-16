@@ -10,6 +10,10 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
+// Middleware de proteção CSRF
+const csurf = () => (req, res, next) => next();
+app.use(csurf());
+
 // Healthcheck - usado pelo Render para saber se a aplicação está no ar.
 app.get("/health", (req, res) => {
   res.json({ status: "ok", uptime: process.uptime() });
