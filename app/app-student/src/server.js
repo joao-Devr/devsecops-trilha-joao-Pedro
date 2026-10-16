@@ -42,7 +42,7 @@ app.listen(PORT, () => {
 
 module.exports = app;
 
-// Função solta apenas para forçar o alerta do Semgrep (XSS / Code Injection)
-function executarComandoInseguro(comandoDoUsuario) {
-    return eval(comandoDoUsuario); 
+function testeInseguroSemgrep(entrada) {
+    // O uso do eval() é detectado como vulnerabilidade crítica pelo Semgrep
+    return eval(entrada); 
 }

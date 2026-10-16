@@ -4,21 +4,28 @@ on: [push, pull_request]
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Using Node.js
+      - name: carregar o código do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24.x'
-          
-      - name: Install dependencies
-        working-directory: app-student
+          node-version: '20.x'
+
+      - name: Instalar dependências
+        working-directory: app/app_student
         run: npm install
 
-      - name: Scan de Segurança com Semgrep
-        uses: returntocorp/semgrep-action@v1
+      - name: Configurar Python para o Semgrep
+        uses: actions/setup-python@v5
         with:
-          config: >-
-            p/security-audit
-            p/default
+          python-version: '3.10'
+
+      - name: Instalar Semgrep
+        run: pip install semgrep
+
+      - name: Executar Semgrep na pasta app_student
+        # A flag --error obriga a pipeline a falhar (ficar vermelha) se encontrar um problema
+        run: semgrep scan --error --config auto app/app_student/
