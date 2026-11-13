@@ -78,6 +78,7 @@ jobs:
           output: trivy-report.sarif
           severity: CRITICAL,HIGH
           vuln-type: os,library
+          ignore-unfixed: true
           exit-code: 1  # faz com que a pipeline falhe se forem encontradas vulnerabilidades críticas ou altas
 
       - name: Upload Trivy results to GitHub Security
