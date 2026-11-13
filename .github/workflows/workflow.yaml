@@ -9,7 +9,7 @@ jobs:
   semgrep:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -26,7 +26,7 @@ jobs:
   npm-audit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-node@v4
         with:
           node-version: '24.x'
@@ -37,7 +37,7 @@ jobs:
   gitleaks:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - uses: gitleaks/gitleaks-action@v3
@@ -47,9 +47,20 @@ jobs:
   trivy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: docker build -t my-app-image:latest ./app/app-student
-      - uses: aquasecurity/trivy-action@v0.9.0   # atualize para uma versão recente
+
+      - name: Trivy (tabela no log)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: my-app-image:latest
+          format: table
+          severity: CRITICAL,HIGH
+          vuln-type: os,library
+          exit-code: 0
+
+      - name: Trivy (SARIF, bloqueia se achar)
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: my-app-image:latest
           format: sarif
@@ -57,6 +68,7 @@ jobs:
           severity: CRITICAL,HIGH
           vuln-type: os,library
           exit-code: 1
+
       - name: Enviar resultado ao GitHub Security
         if: always()
         uses: github/codeql-action/upload-sarif@v4
