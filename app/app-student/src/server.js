@@ -1,6 +1,7 @@
 const express = require("express");
 const csrf = require("csurf");
 const _ = require("lodash");
+const cookieParser = require("cookie-parser");
 
 const tasksRouter = require("./routes/tasks");
 const networkRouter = require("./routes/network");
@@ -10,6 +11,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
+app.use(cookieParser());
 
 // Proteção contra CSRF reconhecida pelo Semgrep
 app.use(csrf({ cookie: true }));
