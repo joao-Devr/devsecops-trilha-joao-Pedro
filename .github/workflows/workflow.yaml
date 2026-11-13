@@ -1,8 +1,12 @@
 name: Continuous Integration
 on: [push, pull_request]
 
+permissions:
+  contents: read
+  security-events: write
+
 jobs:
-  build:
+  build: # este é o job que vai rodar o Semgrep para escanear vulnerabilidades no código
     runs-on: ubuntu-latest
 
     steps:
@@ -29,3 +33,60 @@ jobs:
       - name: Executar Semgrep na pasta app/app-student
         # A flag --error obriga a pipeline a falhar (ficar vermelha) se encontrar um problema
         run: semgrep scan --error --config auto app/app-student/
+      
+  gitleaks:  # este é o job que vai rodar o Gitleaks para escanear segredos no repositório
+    name: Gitleaks Secret Scan 
+    runs-on: ubuntu-latest
+
+    needs: build  # este job depende do job "build" ter sido concluído com sucesso
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # isso faz com que o Gitleaks consiga analisar todo o histórico do repositório, não apenas o último commit
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v8
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  trivy:  # este é o job que vai rodar o Trivy para escanear vulnerabilidades em imagens Docker
+    name: Trivy Docker Image Scan
+    runs-on: ubuntu-latest
+
+    needs: gitleaks  # este job depende do job "gitleaks" ter sido concluído com sucesso
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build -t my-app-image:latest ./app/app-student
+
+      - name: Run Trivy scan on Docker image
+        uses: aquasecurity/trivy-action@v0.9.0
+        with:
+          image-ref: my-app-image:latest
+          format: sarif
+          output: trivy-report.sarif
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          vuln-type: os,library
+          exit-code: 1  # faz com que a pipeline falhe se forem encontradas vulnerabilidades críticas ou altas
+
+      - name: Upload Trivy results to GitHub Security
+        if: always()  # isso garante que o upload do relatório será feito mesmo que o job falhe
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-report.sarif
+  deploy: # NOVO JOB: Deploy automático no Render
+    name: Deploy to Render
+    runs-on: ubuntu-latest
+    needs: trivy # Só faz deploy se o Trivy passar sem falhas
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' # Só faz deploy na branch main
+    
+    steps:
+      - name: Disparar Deploy Hook do Render
+        run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
