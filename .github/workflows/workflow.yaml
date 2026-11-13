@@ -68,6 +68,7 @@ jobs:
           format: table
           severity: CRITICAL,HIGH
           vuln-type: os,library
+          ignore-unfixed: true
           exit-code: 0
 
       - name: Trivy (SARIF) # este passo gera um relatório SARIF que será enviado para o GitHub Security
@@ -79,6 +80,7 @@ jobs:
           severity: CRITICAL,HIGH
           vuln-type: os,library
           ignore-unfixed: true 
+          limit-severities-for-sarif: true
           exit-code: 1  # faz com que a pipeline falhe se forem encontradas vulnerabilidades críticas ou altas
 
       - name: Upload Trivy results to GitHub Security
