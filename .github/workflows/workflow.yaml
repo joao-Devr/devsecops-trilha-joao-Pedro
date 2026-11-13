@@ -47,7 +47,7 @@ jobs:
           fetch-depth: 0  # isso faz com que o Gitleaks consiga analisar todo o histórico do repositório, não apenas o último commit
 
       - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v8
+        uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
