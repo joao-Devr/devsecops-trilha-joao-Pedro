@@ -6,12 +6,12 @@ permissions:
   security-events: write
 
 jobs:
-  build: # este é o job que vai rodar o Semgrep para escanear vulnerabilidades no código
+  semgrep: # este é o job que vai rodar o Semgrep para escanear vulnerabilidades no código
     runs-on: ubuntu-latest
 
     steps:
       - name: carregar o código do repositório
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Configurar Node.js
         uses: actions/setup-node@v4
@@ -25,7 +25,7 @@ jobs:
       - name: Configurar Python para o Semgrep
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.12'
 
       - name: Instalar Semgrep
         run: pip install semgrep
@@ -35,14 +35,12 @@ jobs:
         run: semgrep scan --error --config auto app/app-student/
       
   gitleaks:  # este é o job que vai rodar o Gitleaks para escanear segredos no repositório
-    name: Gitleaks Secret Scan 
+    name: Gitleaks Secrets Scan 
     runs-on: ubuntu-latest
-
-    needs: build  # este job depende do job "build" ter sido concluído com sucesso
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0  # isso faz com que o Gitleaks consiga analisar todo o histórico do repositório, não apenas o último commit
 
@@ -55,25 +53,34 @@ jobs:
     name: Trivy Docker Image Scan
     runs-on: ubuntu-latest
 
-    needs: gitleaks  # este job depende do job "gitleaks" ter sido concluído com sucesso
-
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Build Docker image
         run: |
           docker build -t my-app-image:latest ./app/app-student
 
-      - name: Run Trivy scan on Docker image
-        uses: aquasecurity/trivy-action@v0.9.0
+      - name: Trivy (tabela no log)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: my-app-image:latest
+          format: table
+          severity: CRITICAL,HIGH
+          vuln-type: os,library
+          ignore-unfixed: true
+          exit-code: 0
+
+      - name: Trivy (SARIF) # este passo gera um relatório SARIF que será enviado para o GitHub Security
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: my-app-image:latest
           format: sarif
           output: trivy-report.sarif
           severity: CRITICAL,HIGH
-          ignore-unfixed: true
           vuln-type: os,library
+          ignore-unfixed: true 
+          limit-severities-for-sarif: true
           exit-code: 1  # faz com que a pipeline falhe se forem encontradas vulnerabilidades críticas ou altas
 
       - name: Upload Trivy results to GitHub Security
@@ -85,7 +92,7 @@ jobs:
   deploy: # NOVO JOB: Deploy automático no Render
     name: Deploy to Render
     runs-on: ubuntu-latest
-    needs: trivy # Só faz deploy se o Trivy passar sem falhas
+    needs: [semgrep, gitleaks, trivy] # só faz o deploy se todos os jobs anteriores passarem
     if: github.ref == 'refs/heads/main' && github.event_name == 'push' # Só faz deploy na branch main
     
     steps:
