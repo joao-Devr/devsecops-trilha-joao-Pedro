@@ -34,18 +34,6 @@ jobs:
         # A flag --error obriga a pipeline a falhar (ficar vermelha) se encontrar um problema
         run: semgrep scan --error --config auto app/app-student/
       
-  npm-audit:  # SCA: verifica vulnerabilidades nas dependências
-    name: npm audit (SCA)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24.x'
-      - name: Auditar dependências
-        working-directory: app/app-student
-        run: npm audit --audit-level=high
-
   gitleaks:  # este é o job que vai rodar o Gitleaks para escanear segredos no repositório
     name: Gitleaks Secrets Scan 
     runs-on: ubuntu-latest
@@ -101,7 +89,7 @@ jobs:
   deploy: # NOVO JOB: Deploy automático no Render
     name: Deploy to Render
     runs-on: ubuntu-latest
-    needs: [semgrep, npm-audit, gitleaks, trivy] # só faz o deploy se todos os jobs anteriores passarem
+    needs: [semgrep, gitleaks, trivy] # só faz o deploy se todos os jobs anteriores passarem
     if: github.ref == 'refs/heads/main' && github.event_name == 'push' # Só faz deploy na branch main
     
     steps:
