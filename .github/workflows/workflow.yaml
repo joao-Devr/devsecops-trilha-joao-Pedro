@@ -81,6 +81,7 @@ jobs:
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-report.sarif
+    
   deploy: # NOVO JOB: Deploy automático no Render
     name: Deploy to Render
     runs-on: ubuntu-latest
