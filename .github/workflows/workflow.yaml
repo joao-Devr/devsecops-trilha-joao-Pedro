@@ -6,49 +6,72 @@ permissions:
   security-events: write
 
 jobs:
-  semgrep:
+  semgrep: # este é o job que vai rodar o Semgrep para escanear vulnerabilidades no código
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v5
+      - name: carregar o código do repositório
+        uses: actions/checkout@v5
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+
+      - name: Instalar dependências
+        working-directory: app/app-student
+        run: npm install
+
+      - name: Configurar Python para o Semgrep
+        uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install semgrep
-      - name: Semgrep
-        run: semgrep scan --config auto --sarif --output semgrep.sarif --error app/app-student/
-      - name: Enviar resultado ao GitHub Security
-        if: always()
-        uses: github/codeql-action/upload-sarif@v4
-        with:
-          sarif_file: semgrep.sarif
-          category: semgrep
 
-  npm-audit:
+      - name: Instalar Semgrep
+        run: pip install semgrep
+
+      - name: Executar Semgrep na pasta app/app-student
+        # A flag --error obriga a pipeline a falhar (ficar vermelha) se encontrar um problema
+        run: semgrep scan --error --config auto app/app-student/
+      
+  npm-audit:  # SCA: verifica vulnerabilidades nas dependências
+    name: npm audit (SCA)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v4
         with:
           node-version: '24.x'
-      - name: Auditar dependências (SCA)
+      - name: Auditar dependências
         working-directory: app/app-student
         run: npm audit --audit-level=high
 
-  gitleaks:
+  gitleaks:  # este é o job que vai rodar o Gitleaks para escanear segredos no repositório
+    name: Gitleaks Secrets Scan 
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout code
+        uses: actions/checkout@v5
         with:
-          fetch-depth: 0
-      - uses: gitleaks/gitleaks-action@v3
+          fetch-depth: 0  # isso faz com que o Gitleaks consiga analisar todo o histórico do repositório, não apenas o último commit
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  trivy:
+  trivy:  # este é o job que vai rodar o Trivy para escanear vulnerabilidades em imagens Docker
+    name: Trivy Docker Image Scan
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v5
-      - run: docker build -t my-app-image:latest ./app/app-student
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Build Docker image
+        run: |
+          docker build -t my-app-image:latest ./app/app-student
 
       - name: Trivy (tabela no log)
         uses: aquasecurity/trivy-action@v0.36.0
@@ -59,7 +82,7 @@ jobs:
           vuln-type: os,library
           exit-code: 0
 
-      - name: Trivy (SARIF, bloqueia se achar)
+      - name: Trivy (SARIF) # este passo gera um relatório SARIF que será enviado para o GitHub Security
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: my-app-image:latest
@@ -67,18 +90,20 @@ jobs:
           output: trivy-report.sarif
           severity: CRITICAL,HIGH
           vuln-type: os,library
-          exit-code: 1
+          exit-code: 1  # faz com que a pipeline falhe se forem encontradas vulnerabilidades críticas ou altas
 
-      - name: Enviar resultado ao GitHub Security
-        if: always()
+      - name: Upload Trivy results to GitHub Security
+        if: always()  # isso garante que o upload do relatório será feito mesmo que o job falhe
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-report.sarif
-          category: trivy
-
-  deploy:
+    
+  deploy: # NOVO JOB: Deploy automático no Render
+    name: Deploy to Render
     runs-on: ubuntu-latest
-    needs: [semgrep, npm-audit, gitleaks, trivy]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [semgrep, npm-audit, gitleaks, trivy] # só faz o deploy se todos os jobs anteriores passarem
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' # Só faz deploy na branch main
+    
     steps:
-      - run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
+      - name: Disparar Deploy Hook do Render
+        run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
